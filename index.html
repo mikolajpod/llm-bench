@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LLM bench — wizualizacja</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topnav">
+    <div class="brand">
+      <span class="brand-title">LLM bench</span>
+      <span class="brand-sub">wizualizacja benchmarków lokalnych LLM</span>
+    </div>
+    <div id="subnav" class="subnav"></div>
+    <nav class="tabs" id="tabs">
+      <a class="tab" data-view="experiment3" href="#/experiment3">Experiment 3</a>
+      <a class="tab" data-view="etap4" href="#/etap4">Etap 4</a>
+      <a class="tab" data-view="quant" href="#/quant">Quant study</a>
+      <a class="tab" data-view="mtp" href="#/mtp">MTP</a>
+      <a class="tab" data-view="models" href="#/models">Models</a>
+      <a class="tab" data-view="help" href="#/help">Help</a>
+    </nav>
+  </header>
+  <main id="view"></main>
+
+  <footer class="appfoot">
+    <span id="footer-status">ładowanie…</span>
+    <span class="spacer"></span>
+    <span class="muted">dane wygenerowane przez <code>build_app_data.py</code></span>
+  </footer>
+
+  <!-- Data (must load first; each defines window.DATA.<key>) -->
+  <script src="data/models.js"></script>
+  <script src="data/prompts.js"></script>
+  <script src="data/experiment3.js"></script>
+  <script src="data/etap4.js"></script>
+  <script src="data/quant.js"></script>
+  <script src="data/mtp.js"></script>
+
+  <!-- Charts (define window.renderLeaderboard/Heatmap/Scatter) -->
+  <script src="charts/palette.js"></script>
+  <script src="charts/leaderboard.js"></script>
+  <script src="charts/heatmap.js"></script>
+  <script src="charts/scatter.js"></script>
+
+  <!-- Views (define window.renderModels, renderExperiment3, renderHelp) -->
+  <script src="views/models.js"></script>
+  <script src="views/experiment3.js"></script>
+  <script src="views/etap4.js"></script>
+  <script src="views/quant.js"></script>
+  <script src="views/mtp.js"></script>
+  <script src="views/help.js"></script>
+
+  <!-- Router (boots last) -->
+  <script src="app.js"></script>
+</body>
+</html>
