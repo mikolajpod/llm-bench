@@ -100,7 +100,30 @@
       median_predicted_n:  "desc",
       median_wall_seconds: "asc",
     };
-    const state = { stage: "no_thinking", sortBy: "avg_grade", sortDir: "desc" };
+    const state = { stage: APP_STATE.get("stage", "no_thinking"), sortBy: "avg_grade", sortDir: "desc",
+                    vbX: APP_STATE.get("vbX", "mean_wall_seconds"), vbZoom: APP_STATE.get("vbZoom", false) };
+    // Verbosity axis: wall = what you wait (engine speed × answer length + prefill); tokens = length alone.
+    const VB = {
+      mean_wall_seconds: {
+        label: "czas na odpowiedź [s] (średnia, skala log)",
+        sub: "średnia ocena vs średni czas odpowiedzi = gadatliwość × szybkość silnika",
+        fmt: v => `${v.toFixed(1)} s/odp.`,
+        extra: r => ` · ${r.mean_predicted_n} tok/odp. · ${Math.round(r.median_decode_tps || 0)} t/s · trunc ${Math.round(100 * r.trunc_rate)}%`,
+      },
+      mean_predicted_n: {
+        label: "tokenów na odpowiedź (średnia, skala log)",
+        sub: "średnia ocena vs średnia długość odpowiedzi (z myśleniem) — sama gadatliwość, bez sprzętu",
+        fmt: v => `${Math.round(v)} tok/odp.`,
+        extra: r => ` · ${r.mean_wall_seconds?.toFixed(1)} s/odp. · trunc ${Math.round(100 * r.trunc_rate)}%`,
+      },
+      median_decode_tps: {
+        label: "decode tokens/s (mediana, skala log)",
+        sub: "średnia ocena vs szybkość generowania — sam silnik × model, bez długości odpowiedzi",
+        fmt: v => `${Math.round(v)} t/s`, frontier: "high",
+        extra: r => ` · ${r.mean_predicted_n} tok/odp. · ${r.mean_wall_seconds?.toFixed(1)} s/odp.`,
+      },
+    };
+
 
     function setSort(key) {
       // Click on the active column toggles direction; on inactive switches to its default.
@@ -144,10 +167,19 @@
         </section>
 
         <section class="panel">
-          <h2>Quality vs Speed <span class="panel-sub">średnia ocena vs decode tokens/s</span></h2>
-          <div id="sc-container"></div>
+          <h2>Quality vs Speed / Gadatliwość <span class="panel-sub" id="vb-sub"></span></h2>
+          <div style="display:flex; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap:wrap">
+            <div class="stage-switch" id="vb-switch">
+              <button data-x="mean_wall_seconds">czas / odpowiedź</button>
+              <button data-x="mean_predicted_n">tokenów / odpowiedź</button>
+              <button data-x="median_decode_tps">decode tok/s</button>
+            </div>
+            <div class="stage-switch">
+              <button id="vb-zoom" title="rozciągnij wykres 2× w pionie">zoom 2×</button>
+            </div>
+          </div>
+          <div id="vb-container"></div>
         </section>
-
         <section class="panel">
           <h2>Heatmap model × prompt <span class="panel-sub">klik na komórkę → odpowiedzi modelu</span></h2>
           <div class="heatmap-wrap" id="hm-container"></div>
@@ -167,19 +199,40 @@
     // Sticky subnav (outside main, populated by this view; cleared by router on view change).
     document.getElementById("subnav").innerHTML = `
       <div class="stage-switch" id="stage-switch">
-        <button data-stage="no_thinking" class="active">no_thinking</button>
+        <button data-stage="no_thinking">no_thinking</button>
         <button data-stage="with_thinking">with_thinking</button>
         <button data-stage="all">all</button>
       </div>
     `;
     const switchEl = document.getElementById("stage-switch");
+    for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b.dataset.stage === state.stage);
     for (const btn of switchEl.querySelectorAll("button")) {
       btn.addEventListener("click", () => {
         state.stage = btn.dataset.stage;
+        APP_STATE.set("stage", state.stage);
         for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b === btn);
         renderAll();
       });
     }
+
+    const vbSwitch = document.getElementById("vb-switch");
+    for (const b of vbSwitch.querySelectorAll("button")) b.classList.toggle("active", b.dataset.x === state.vbX);
+    for (const btn of vbSwitch.querySelectorAll("button")) {
+      btn.addEventListener("click", () => {
+        state.vbX = btn.dataset.x;
+        APP_STATE.set("vbX", state.vbX);
+        for (const b of vbSwitch.querySelectorAll("button")) b.classList.toggle("active", b === btn);
+        renderAll();
+      });
+    }
+    const vbZoom = document.getElementById("vb-zoom");
+    vbZoom.classList.toggle("active", !!state.vbZoom);
+    vbZoom.addEventListener("click", () => {
+      state.vbZoom = !state.vbZoom;
+      APP_STATE.set("vbZoom", state.vbZoom);
+      vbZoom.classList.toggle("active", state.vbZoom);
+      renderAll();
+    });
 
     const drawer = document.getElementById("drawer");
     const backdrop = document.getElementById("backdrop");
@@ -194,6 +247,20 @@
     });
 
     function openCellDrawer(modelKey, promptId) {
+      let realModel = modelKey, realStage = state.stage;
+      if (state.stage === "all") {
+        const d = decomposeKey(modelKey);
+        if (d) { realModel = d.model; realStage = d.stage; }
+      }
+      document.getElementById("drawer-body").innerHTML = `<div class="loading">wczytywanie odpowiedzi…</div>`;
+      drawer.classList.add("open");
+      backdrop.classList.add("show");
+      loadDetail(e3, realStage, realModel)
+        .then(() => renderCellDrawer(modelKey, promptId))
+        .catch(e => { document.getElementById("drawer-body").innerHTML = `<div class="loading">błąd: ${e.message}</div>`; });
+    }
+
+    function renderCellDrawer(modelKey, promptId) {
       // In "all" mode, modelKey is synthetic — decompose to look up real cell.
       let realModel = modelKey, realStage = state.stage;
       if (state.stage === "all") {
@@ -321,7 +388,13 @@
         currentSort: state.sortBy,
         currentDir: state.sortDir,
       });
-      renderScatter(document.getElementById("sc-container"), sorted, modelMeta, { onClickModel: openModelDrawer });
+      const vb = VB[state.vbX];
+      document.getElementById("vb-sub").textContent = vb.sub;
+      renderScatter(document.getElementById("vb-container"), sorted, modelMeta, {
+        onClickModel: openModelDrawer, xKey: state.vbX, xLabel: vb.label, xFmt: vb.fmt,
+        xLog: true, frontier: vb.frontier || "low", tooltipExtra: vb.extra,
+        hScale: state.vbZoom ? 2 : 1,
+      });
       renderHeatmap(document.getElementById("hm-container"), sortedData, modelMeta, prompts, { onClick: openCellDrawer });
     }
 

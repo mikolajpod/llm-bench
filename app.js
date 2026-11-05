@@ -1,4 +1,50 @@
 // app.js — router + dispatcher (classic script, no modules; works on file://)
+
+// Sample content/reasoning live in data/<exp>/<nt|wt>_NN.js (split_details in build_app_data.py).
+// loadDetail injects that script once and merges the texts into the matrix cells in place.
+// Returns a Promise; resolves immediately when already merged (or the data was never split).
+window.loadDetail = (function () {
+  const pending = {};
+  return function (data, stage, model) {
+    const rel = data.detail_index?.[stage]?.[model];
+    if (!rel) return Promise.resolve();
+    const key = `${data.detail_name}|${stage}|${model}`;
+    if (pending[key]) return pending[key];
+    return (pending[key] = new Promise((resolve, reject) => {
+      const el = document.createElement("script");
+      el.src = "data/" + rel;
+      el.onload = () => {
+        const det = (window.DATA_DETAIL || {})[key] || {};
+        const row = data[stage]?.matrix?.[model] || {};
+        for (const [pid, arr] of Object.entries(det)) {
+          (row[pid]?.samples || []).forEach((s, i) => Object.assign(s, arr[i] || {}));
+        }
+        delete window.DATA_DETAIL[key];
+        resolve();
+      };
+      el.onerror = () => { delete pending[key]; reject(new Error("nie udało się wczytać " + rel)); };
+      document.head.appendChild(el);
+    }));
+  };
+})();
+
+// UI state shared by all views and kept across reloads (stage NT/WT/all, scatter axis, zoom).
+// Defined at load time, before any view renders.
+window.APP_STATE = (function () {
+  const PREFIX = "llmbench.";
+  const mem = {};
+  return {
+    get(k, def) {
+      if (k in mem) return mem[k];
+      try { const v = localStorage.getItem(PREFIX + k); if (v != null) return (mem[k] = JSON.parse(v)); } catch (e) {}
+      return def;
+    },
+    set(k, v) {
+      mem[k] = v;
+      try { localStorage.setItem(PREFIX + k, JSON.stringify(v)); } catch (e) {}
+    },
+  };
+})();
 (function () {
   const VIEW = document.getElementById("view");
   const TABS = document.getElementById("tabs");
@@ -8,6 +54,7 @@
     "models": () => window.renderModels(VIEW),
     "experiment3": () => window.renderExperiment3(VIEW),
     "etap4": () => window.renderEtap4(VIEW),
+    "etap5": () => window.renderEtap5(VIEW),
     "quant": () => window.renderQuant(VIEW),
     "mtp": () => window.renderMTP(VIEW),
     "help": () => window.renderHelp(VIEW),

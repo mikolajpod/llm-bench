@@ -93,7 +93,8 @@
       avg_grade: "desc", median_decode_tps: "desc",
       median_predicted_n: "desc", median_wall_seconds: "asc",
     };
-    const state = { stage: "no_thinking", sortBy: "avg_grade", sortDir: "desc", vbX: "mean_wall_seconds" };
+    const state = { stage: APP_STATE.get("stage", "no_thinking"), sortBy: "avg_grade", sortDir: "desc",
+                    vbX: APP_STATE.get("vbX", "mean_wall_seconds"), vbZoom: APP_STATE.get("vbZoom", false) };
     // Verbosity axis: wall = what you wait (engine speed × answer length + prefill); tokens = length alone.
     const VB = {
       mean_wall_seconds: {
@@ -166,7 +167,7 @@
           <h2>Quality vs Speed / Gadatliwość <span class="panel-sub" id="vb-sub"></span></h2>
           <div style="display:flex; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap:wrap">
             <div class="stage-switch" id="vb-switch">
-              <button data-x="mean_wall_seconds" class="active">czas / odpowiedź</button>
+              <button data-x="mean_wall_seconds">czas / odpowiedź</button>
               <button data-x="mean_predicted_n">tokenów / odpowiedź</button>
               <button data-x="median_decode_tps">decode tok/s</button>
             </div>
@@ -194,31 +195,37 @@
 
     document.getElementById("subnav").innerHTML = `
       <div class="stage-switch" id="stage-switch">
-        <button data-stage="no_thinking" class="active">no_thinking</button>
+        <button data-stage="no_thinking">no_thinking</button>
         <button data-stage="with_thinking">with_thinking${graded.with_thinking ? "" : " ⏳"}</button>
         <button data-stage="all">all${graded.with_thinking ? "" : " ⏳"}</button>
       </div>
     `;
     const switchEl = document.getElementById("stage-switch");
+    for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b.dataset.stage === state.stage);
     for (const btn of switchEl.querySelectorAll("button")) {
       btn.addEventListener("click", () => {
         state.stage = btn.dataset.stage;
+        APP_STATE.set("stage", state.stage);
         for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b === btn);
         renderAll();
       });
     }
 
     const vbSwitch = document.getElementById("vb-switch");
+    for (const b of vbSwitch.querySelectorAll("button")) b.classList.toggle("active", b.dataset.x === state.vbX);
     for (const btn of vbSwitch.querySelectorAll("button")) {
       btn.addEventListener("click", () => {
         state.vbX = btn.dataset.x;
+        APP_STATE.set("vbX", state.vbX);
         for (const b of vbSwitch.querySelectorAll("button")) b.classList.toggle("active", b === btn);
         renderAll();
       });
     }
     const vbZoom = document.getElementById("vb-zoom");
+    vbZoom.classList.toggle("active", !!state.vbZoom);
     vbZoom.addEventListener("click", () => {
       state.vbZoom = !state.vbZoom;
+      APP_STATE.set("vbZoom", state.vbZoom);
       vbZoom.classList.toggle("active", state.vbZoom);
       renderAll();
     });
@@ -236,6 +243,20 @@
     });
 
     function openCellDrawer(modelKey, promptId) {
+      let realModel = modelKey, realStage = state.stage;
+      if (state.stage === "all") {
+        const d = decomposeKey(modelKey);
+        if (d) { realModel = d.model; realStage = d.stage; }
+      }
+      document.getElementById("drawer-body").innerHTML = `<div class="loading">wczytywanie odpowiedzi…</div>`;
+      drawer.classList.add("open");
+      backdrop.classList.add("show");
+      loadDetail(e4, realStage, realModel)
+        .then(() => renderCellDrawer(modelKey, promptId))
+        .catch(e => { document.getElementById("drawer-body").innerHTML = `<div class="loading">błąd: ${e.message}</div>`; });
+    }
+
+    function renderCellDrawer(modelKey, promptId) {
       let realModel = modelKey, realStage = state.stage;
       if (state.stage === "all") {
         const d = decomposeKey(modelKey);

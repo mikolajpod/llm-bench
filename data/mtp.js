@@ -8,10 +8,10 @@ window.DATA.mtp = {
       "model": "gemma-4-12B QAT UD-Q4_K_XL",
       "drafter": "drafter QAT Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 29.41,
-      "watts": 90.7,
-      "j_per_token": 3.125,
+      "n": 8,
+      "tps": 35.07,
+      "watts": 163.9,
+      "j_per_token": 4.206,
       "accept": null,
       "speedup": 1.0,
       "energy_delta": 0.0
@@ -23,13 +23,13 @@ window.DATA.mtp = {
       "model": "gemma-4-12B QAT UD-Q4_K_XL",
       "drafter": "drafter QAT Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 34.11,
-      "watts": 76.1,
-      "j_per_token": 2.214,
-      "accept": 0.962,
-      "speedup": 1.16,
-      "energy_delta": -0.292
+      "n": 8,
+      "tps": 46.21,
+      "watts": 115.8,
+      "j_per_token": 2.379,
+      "accept": 0.961,
+      "speedup": 1.318,
+      "energy_delta": -0.434
     },
     {
       "backend": "2.59.0",
@@ -38,13 +38,13 @@ window.DATA.mtp = {
       "model": "gemma-4-12B QAT UD-Q4_K_XL",
       "drafter": "drafter QAT Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 41.11,
-      "watts": 73.6,
-      "j_per_token": 1.797,
-      "accept": 0.86,
-      "speedup": 1.398,
-      "energy_delta": -0.425
+      "n": 8,
+      "tps": 64.49,
+      "watts": 112.4,
+      "j_per_token": 1.689,
+      "accept": 0.854,
+      "speedup": 1.839,
+      "energy_delta": -0.598
     },
     {
       "backend": "2.59.0",
@@ -53,10 +53,10 @@ window.DATA.mtp = {
       "model": "gemma-4-12B Q4_K_M (lmstudio)",
       "drafter": "drafter plain Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 26.8,
-      "watts": 113.6,
-      "j_per_token": 4.257,
+      "n": 8,
+      "tps": 33.44,
+      "watts": 167.5,
+      "j_per_token": 4.79,
       "accept": null,
       "speedup": 1.0,
       "energy_delta": 0.0
@@ -68,13 +68,13 @@ window.DATA.mtp = {
       "model": "gemma-4-12B Q4_K_M (lmstudio)",
       "drafter": "drafter plain Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 28.85,
-      "watts": 82.5,
-      "j_per_token": 2.832,
+      "n": 8,
+      "tps": 41.96,
+      "watts": 124.3,
+      "j_per_token": 2.922,
       "accept": 0.96,
-      "speedup": 1.076,
-      "energy_delta": -0.335
+      "speedup": 1.255,
+      "energy_delta": -0.39
     },
     {
       "backend": "2.59.0",
@@ -83,13 +83,13 @@ window.DATA.mtp = {
       "model": "gemma-4-12B Q4_K_M (lmstudio)",
       "drafter": "drafter plain Q8_0 (osobny plik)",
       "placement": "pełny GPU",
-      "n": 4,
-      "tps": 34.54,
-      "watts": 77.1,
-      "j_per_token": 2.21,
-      "accept": 0.85,
-      "speedup": 1.289,
-      "energy_delta": -0.481
+      "n": 8,
+      "tps": 52.15,
+      "watts": 118.7,
+      "j_per_token": 2.213,
+      "accept": 0.843,
+      "speedup": 1.56,
+      "energy_delta": -0.538
     },
     {
       "backend": "2.59.0",
@@ -182,7 +182,7 @@ window.DATA.mtp = {
       "energy_delta": -0.338
     }
   ],
-  "idle_watts": 29.6,
+  "idle_watts": 36.3,
   "history_qwen36_may": [
     {
       "binary": "upstream llama.cpp b9432",

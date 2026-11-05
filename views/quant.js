@@ -26,7 +26,7 @@
     const prompts = window.DATA.prompts;
     const modelMeta = q.model_configs;
     const promptMeta = Object.fromEntries(prompts.map(p => [p.prompt_id, p]));
-    const state = { stage: "no_thinking" };
+    const state = { stage: APP_STATE.get("stage", "no_thinking") === "with_thinking" ? "with_thinking" : "no_thinking" };
 
     // ── 2×3 matrix: rows = variant/quant, cols = provider ──
     const byKey = {};
@@ -118,13 +118,15 @@
 
     document.getElementById("subnav").innerHTML = `
       <div class="stage-switch" id="stage-switch">
-        <button data-stage="no_thinking" class="active">no_thinking</button>
+        <button data-stage="no_thinking">no_thinking</button>
         <button data-stage="with_thinking">with_thinking</button>
       </div>`;
     const switchEl = document.getElementById("stage-switch");
+    for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b.dataset.stage === state.stage);
     for (const btn of switchEl.querySelectorAll("button")) {
       btn.addEventListener("click", () => {
         state.stage = btn.dataset.stage;
+        APP_STATE.set("stage", state.stage);
         for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b === btn);
         renderCharts();
       });
