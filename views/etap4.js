@@ -181,6 +181,10 @@
           <h2>Heatmap model × prompt <span class="panel-sub">klik na komórkę → odpowiedzi modelu</span></h2>
           <div class="heatmap-wrap" id="hm-container"></div>
         </section>
+        <section class="panel">
+          <h2>Obcięte odpowiedzi (TRUNC) model × prompt <span class="panel-sub">liczba sampli, które doszły do max_tokens · kolor = udział w komórce · Σ = suma · klik → odpowiedzi</span></h2>
+          <div class="heatmap-wrap" id="tr-container"></div>
+        </section>
       </div>
 
       <div class="backdrop" id="backdrop"></div>
@@ -410,6 +414,7 @@
         hScale: state.vbZoom ? 2 : 1,
       });
       renderHeatmap(document.getElementById("hm-container"), sortedData, modelMeta, prompts, { onClick: openCellDrawer });
+      renderTruncHeatmap(document.getElementById("tr-container"), sortedData, modelMeta, prompts, { onClick: openCellDrawer });
     }
 
     renderAll();

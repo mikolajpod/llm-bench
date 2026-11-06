@@ -149,7 +149,8 @@
         Nanbeige NT bez longctx (19 promptów), Olmo-3-Think N=3.
         <strong>Oceny (2026-11-04):</strong> ślepa ocena Sonnet 5.5 wg <code>eval_etap5/benchmark_criteria_v3.md</code> v3.1
         + sprawdzenia maszynowe (pytest z mutantami, PostgreSQL 16, javac doclint, testy Java, liczenie słów, longctx);
-        ocena komórki = <strong>średnia próbek</strong>. Kontrole (gemma-4-12b NT, gemma-4-e4b WT) w każdej z 6 paczek.
+        ocena komórki = <strong>średnia próbek</strong>. Kontrole (gemma-4-12b NT, gemma-4-e4b WT) w każdej z 7 paczek.
+        <strong>Paczka 7 (2026-11-06):</strong> Qwen3.8-Flash-Next na silniku <strong>Strata 0.1.56</strong> (wpisy <span class="mono">strata/…</span>: IQ2_XS, Swift 1.5, Coder IQ1_M; low-RAM, KV int8, MTP) — WT na <code>reasoning_effort=medium</code> (domyślny xhigh nie mieści się w 16k), Swift na domyślnym.
         <strong>all</strong> łączy NT i WT. Klik w nazwę modelu lub komórkę → szczegóły.
       </p>
 
@@ -175,6 +176,10 @@
         <section class="panel">
           <h2>Heatmap model × prompt <span class="panel-sub">klik na komórkę → odpowiedzi modelu</span></h2>
           <div class="heatmap-wrap" id="hm-container"></div>
+        </section>
+        <section class="panel">
+          <h2>Obcięte odpowiedzi (TRUNC) model × prompt <span class="panel-sub">liczba sampli, które doszły do max_tokens · kolor = udział w komórce · Σ = suma · klik → odpowiedzi</span></h2>
+          <div class="heatmap-wrap" id="tr-container"></div>
         </section>
       </div>
 
@@ -406,6 +411,7 @@
         hScale: state.vbZoom ? 2 : 1,
       });
       renderHeatmap(document.getElementById("hm-container"), sortedData, modelMeta, prompts, { onClick: openCellDrawer });
+      renderTruncHeatmap(document.getElementById("tr-container"), sortedData, modelMeta, prompts, { onClick: openCellDrawer });
     }
 
     renderAll();
