@@ -24,7 +24,9 @@
     const PAD_LEFT = 280;
     // Right-side numeric columns: 4 × COL_W + extra padding
     const COL_W = 58;
-    const PAD_RIGHT = 4 * COL_W + 12;
+    // Etap 5 32k view (2026-11-14): rows carrying avg_grade_16k get a Δ-vs-16k column + a 16k tick on the bar
+    const has16 = leaderboard.some(r => r.avg_grade_16k != null);
+    const PAD_RIGHT = (has16 ? 5 : 4) * COL_W + 12;
     const H = PAD_TOP + leaderboard.length * ROW + PAD_BOTTOM;
     const BAR_W = W - PAD_LEFT - PAD_RIGHT;
     const SCALE = BAR_W / 10;
@@ -62,6 +64,7 @@
     // The bar-area title "ocena" doubles as a sort header for avg_grade.
     const cols = [
       { label: "avg",     key: "avg_grade" },
+      ...(has16 ? [{ label: "Δ 16k", key: "delta_16k" }] : []),
       { label: "tok/s",   key: "median_decode_tps" },
       { label: "tokenów", key: "median_predicted_n" },
       { label: "wall s",  key: "median_wall_seconds" },
@@ -118,6 +121,13 @@
         fill: color, rx: 3, opacity: 0.85,
       }, g);
 
+      if (row.avg_grade_16k != null && Math.abs(row.avg_grade - row.avg_grade_16k) >= 0.005) {
+        const x16 = PAD_LEFT + row.avg_grade_16k * SCALE;  // where the entry stood at 16k
+        el("line", { x1: x16, x2: x16, y1: y + 2, y2: y + ROW - 2, stroke: "#e6e6e6", "stroke-width": 2,
+                     "stroke-dasharray": "2 2", opacity: 0.9 }, g);
+        el("title", {}, g).textContent = `16k: ${row.avg_grade_16k.toFixed(2)} → 32k: ${row.avg_grade.toFixed(2)}` +
+          (row.n_replaced_32k ? ` (${row.n_replaced_32k} próbek przeliczonych do 32k)` : "");
+      }
       if (row.trunc_count > 0) {
         const tx = PAD_LEFT + Math.max(2, row.avg_grade * SCALE) - 18;
         el("circle", { cx: tx + 8, cy: y + ROW / 2, r: 6, fill: "#ff6b6b", opacity: 0.95 }, g);
@@ -130,6 +140,8 @@
       // Right-side numeric columns
       const values = [
         row.avg_grade != null ? row.avg_grade.toFixed(2) : "—",
+        ...(has16 ? [row.delta_16k == null ? "—" : (Math.abs(row.delta_16k) < 0.005 ? "0" :
+                     (row.delta_16k > 0 ? "+" : "") + row.delta_16k.toFixed(2))] : []),
         row.median_decode_tps != null ? row.median_decode_tps.toFixed(1) : "—",
         row.median_predicted_n != null ? String(row.median_predicted_n) : "—",
         row.median_wall_seconds != null ? row.median_wall_seconds.toFixed(1) + "s" : "—",

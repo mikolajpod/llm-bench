@@ -29,10 +29,13 @@
           <span class="lbl">prompt:</span><span class="mono">${s.prompt_n}</span>
           <span class="lbl">wall:</span><span class="mono">${s.wall_seconds}s</span>
           ${s.trunc_flag ? `<span class="tag bad">${s.trunc_flag}</span>` : ""}
+          ${s.source32k && s.source32k.startsWith("dogrywka") ? `<span class="tag" title="próbka ucięta na 16k (${s.orig_predicted_n ?? "?"} tok), przeliczona do 32k: ${s.source32k.endsWith("continue") ? "dogenerowanie od zapisanych 16k" : "pełne przeliczenie od zera"}">32k · ${s.source32k.endsWith("continue") ? "dogen." : "od zera"}</span>` : ""}
           ${s.grade != null ? `<span class="lbl">ocena:</span>${cellGradePill(s.grade)}` : ""}
+          ${s.grade_16k !== undefined ? `<span class="lbl">16k:</span>${cellGradePill(s.grade_16k)}` : ""}
           <span class="lbl" style="margin-left:auto">${s.finish_reason || ""}</span>
         </div>
         ${s.grade_note ? `<div class="muted" style="font-size:12px; margin: 4px 0 6px">${escapeHtml(s.grade_note)}</div>` : ""}
+        ${s.grade_note_16k ? `<div class="muted" style="font-size:11.5px; margin: 0 0 6px; opacity:.75">16k: ${escapeHtml(s.grade_note_16k)}</div>` : ""}
         ${reasoning ? html`
           <details class="sample-reasoning">
             <summary>reasoning trace (${reasoning.length} znaków)</summary>
@@ -139,10 +142,13 @@
     }
 
     root.innerHTML = html`
-      <h1 class="section-title">Etap 5 — RTX 3090</h1>
+      <h1 class="section-title">Etap 5 — RTX 3090 · limit 32k</h1>
       <p class="section-sub">
         <strong>Hardware:</strong> RTX 3090 24 GB · llama-server 2.64 natywnie, zamrożony layout/ctx per model (bez <code>--fit</code>), KV f16.
-        <strong>Prompty:</strong> nowy zestaw ${prompts.length} promptów (8 z Etapu 4 + 12 nowych z ocenami maszynowymi), max_tokens 16000.
+        <strong>Prompty:</strong> nowy zestaw ${prompts.length} promptów (8 z Etapu 4 + 12 nowych z ocenami maszynowymi), max_tokens 16000,
+        <strong>dogrywka do 32000</strong> (2026-11-08…11): każdy test ucięty na 16k (351 próbek) przeliczony do 32k — dogenerowanie od zapisanych 16k
+        (prefiks zweryfikowany tokenizerem) albo od zera; ocena tych próbek (paczki 8–10) zastępuje ocenę z 16k. Bez dogrywki: Nanbeige i <code>longctx_qa_hard</code>.
+        Kolumna <strong>Δ 16k</strong> i przerywana kreska na pasku = wynik przy limicie 16k; próbki z dogrywki mają znacznik <span class="tag">32k</span> i ocenę z 16k obok.
         <strong>Zakres:</strong> ${e4.no_thinking.leaderboard.length} wpisów no_thinking,
         ${e4.with_thinking.leaderboard.length} with_thinking × 5 sampli; sampler producenta.
         Muse-Glimmer nie ma wyłącznika thinking — <span class="mono">@low</span> to <code>reasoning_strength=low</code> (WT).
@@ -150,7 +156,9 @@
         <strong>Oceny (2026-11-04):</strong> ślepa ocena Sonnet 5.5 wg <code>eval_etap5/benchmark_criteria_v3.md</code> v3.1
         + sprawdzenia maszynowe (pytest z mutantami, PostgreSQL 16, javac doclint, testy Java, liczenie słów, longctx);
         ocena komórki = <strong>średnia próbek</strong>. Kontrole (gemma-4-12b NT, gemma-4-e4b WT) w każdej z 7 paczek.
-        <strong>Paczka 7 (2026-11-06):</strong> Qwen3.8-Flash-Next na silniku <strong>Strata 0.1.56</strong> (wpisy <span class="mono">strata/…</span>: IQ2_XS, Swift 1.5, Coder IQ1_M; low-RAM, KV int8, MTP) — WT na <code>reasoning_effort=medium</code> (domyślny xhigh nie mieści się w 16k), Swift na domyślnym.
+        <strong>Strata (paczka 11, 2026-11-11):</strong> Qwen3.8-Flash-Next na silniku <strong>Strata v0.2.13.1 / engine 0.1.59</strong>, pełny przebieg od nowa przy max_tokens 32000 i zegarach jak llama (mem P3, core ≤1000)
+        (wpisy <span class="mono">strata/…</span>: IQ2_XS, Swift 1.5, Coder IQ1_M; low-RAM, KV int8, MTP) — WT na <code>reasoning_effort=medium</code>, Swift na domyślnym.
+        Δ 16k dla Straty = różnica względem starego przebiegu 0.1.56 (P2, 16k, paczka 7) — w granicach szumu; Strata <strong>nie jest powtarzalna</strong> przy stałym seedzie (test 2026-11-11).
         <strong>all</strong> łączy NT i WT. Klik w nazwę modelu lub komórkę → szczegóły.
       </p>
 
@@ -279,6 +287,7 @@
         <div class="drawer-prompt">${escapeHtml(p.prompt)}</div>
         <div style="display:flex; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap:wrap">
           <span>${cellGradePill(cell.grade)} ocena (średnia próbek)</span>
+          ${cell.grade_16k != null && Math.abs(cell.grade_16k - (cell.grade ?? 0)) >= 0.005 ? `<span class="muted">16k: ${cell.grade_16k.toFixed(1)}${cell.n_replaced_32k ? ` · ${cell.n_replaced_32k} próbek przeliczonych do 32k` : ""}</span>` : ""}
           ${cell.grade_median != null ? `<span class="muted">mediana ${cell.grade_median} · ≥8: ${Math.round(100 * (cell.grade_pass_rate || 0))}%</span>` : ""}
           ${cell.median_decode_tps ? `<span class="muted">${cell.median_decode_tps.toFixed(1)} t/s med.</span>` : ""}
           ${cell.median_predicted_n ? `<span class="muted">${cell.median_predicted_n} tok wygen. (med.)</span>` : ""}
@@ -318,6 +327,7 @@
           <div style="display:grid; grid-template-columns: 160px 1fr; gap: 4px var(--space-3); font-size:12px">
             ${diskModel ? `<div class="muted">plik na dysku</div><div><span class="mono">${escapeHtml(diskModel.display_name)}</span> · <span class="muted">${escapeHtml(diskModel.quant)}</span></div>` : ""}
             ${diskModel ? `<div class="muted">params</div><div><span class="mono">${escapeHtml(diskModel.params_str || "?")}</span> · <span class="muted">arch ${escapeHtml(diskModel.arch)}</span></div>` : ""}
+            ${cfg.engine_note ? `<div class="muted">silnik</div><div style="font-size:11.5px">${escapeHtml(cfg.engine_note)}</div>` : ""}
             <div class="muted">thinking</div><div class="mono">${escapeHtml(cfg.thinking_mode || "—")}</div>
             <div class="muted">-ngl</div><div class="mono">${cfg.ngl ?? "—"}</div>
             ${cfg.n_cpu_moe != null ? `<div class="muted">--n-cpu-moe</div><div class="mono">${cfg.n_cpu_moe}</div>` : ""}
@@ -339,6 +349,7 @@
             <tr style="text-align:left; color:var(--fg-3); font-size:11px; text-transform:uppercase">
               <th style="padding:6px 8px">prompt</th>
               <th style="padding:6px 8px; text-align:center">ocena</th>
+              <th style="padding:6px 8px; text-align:center">16k</th>
               <th style="padding:6px 8px; text-align:right">tok/s</th>
               <th style="padding:6px 8px; text-align:right">tokenów</th>
               <th style="padding:6px 8px; text-align:center">trunc</th>
@@ -349,6 +360,7 @@
             <tr class="row-click" data-prompt="${p.prompt_id}" style="border-top:1px solid var(--border); cursor:pointer">
               <td style="padding:8px"><span class="mono" style="font-size:11px">${p.prompt_id}</span></td>
               <td style="padding:8px; text-align:center">${cellGradePill(cell?.grade)}</td>
+              <td style="padding:8px; text-align:center" class="mono muted">${cell?.grade_16k != null && Math.abs(cell.grade_16k - (cell.grade ?? 0)) >= 0.005 ? cell.grade_16k.toFixed(1) : ""}</td>
               <td style="padding:8px; text-align:right" class="mono">${cell?.median_decode_tps?.toFixed(1) || "—"}</td>
               <td style="padding:8px; text-align:right" class="mono">${cell?.median_predicted_n || "—"}</td>
               <td style="padding:8px; text-align:center">${cell?.any_truncated ? "⚠" : ""}</td>

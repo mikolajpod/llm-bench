@@ -93,6 +93,38 @@
     `;
   }
 
+  // eval_strata/strata_models.html embedded in a shadow root, so its CSS does not leak into the app
+  // (and the app's does not leak in); dark palette forced to match the app; its tab + sort script re-wired here.
+  function mountStrataModels(host) {
+    const d = window.DATA.strata_models;
+    if (!host || !d) return;
+    const sh = host.attachShadow({ mode: "open" });
+    const css = d.style
+      .replace(/:root/g, ":host")
+      .replace(/body\s*\{/, ".page {")
+      .replace(/@media \(prefers-color-scheme: dark\)\s*\{/g, "@media all {");  // app is dark-only
+    sh.innerHTML = `<style>${css} .page{margin:0;background:transparent} p,li{max-width:none}
+      .scroll{overflow-x:auto}</style><div class="page"><div class="scroll">${d.body}</div></div>`;
+    const btns = [...sh.querySelectorAll(".tabs button")];
+    btns.forEach(b => b.onclick = () => {
+      sh.querySelectorAll(".tabs button, .panel").forEach(e => e.classList.remove("on"));
+      b.classList.add("on");
+      sh.getElementById(b.dataset.p)?.classList.add("on");
+    });
+    sh.querySelectorAll("table.sortable th").forEach((th, i) => th.onclick = () => {
+      const tb = th.closest("table").tBodies[0];
+      const rows = [...tb.rows].filter(r => !r.classList.contains("grp"));
+      const num = s => { const m = s.replace(",", ".").match(/[\d.]+/); return m ? parseFloat(m[0]) : NaN; };
+      const dir = th.dataset.dir === "asc" ? -1 : 1; th.dataset.dir = dir === 1 ? "asc" : "desc";
+      rows.sort((a, b) => {
+        const x = a.cells[i].textContent, y = b.cells[i].textContent, nx = num(x), ny = num(y);
+        return (isNaN(nx) || isNaN(ny) ? x.localeCompare(y) : nx - ny) * dir;
+      });
+      [...tb.querySelectorAll("tr.grp")].forEach(g => g.style.display = "none");
+      rows.forEach(r => tb.appendChild(r));
+    });
+  }
+
   window.renderModels = function (root) {
     const models = window.DATA.models;
     const families = [...new Set(models.map(m => m.family))].sort();
@@ -150,7 +182,9 @@
       </div>
 
       <div class="cards" id="cards"></div>
+      ${window.DATA.strata_models ? `<section class="panel" style="margin-top: var(--space-5, 32px)"><div id="strata-models-host"></div></section>` : ""}
     `;
+    mountStrataModels(document.getElementById("strata-models-host"));
 
     const familySel = document.getElementById("family-filter");
     const quantSel = document.getElementById("quant-filter");
