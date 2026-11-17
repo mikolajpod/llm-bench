@@ -96,7 +96,8 @@
       median_predicted_n: "desc", median_wall_seconds: "asc",
     };
     const state = { stage: APP_STATE.get("stage", "no_thinking"), sortBy: "avg_grade", sortDir: "desc",
-                    vbX: APP_STATE.get("vbX", "mean_wall_seconds"), vbZoom: APP_STATE.get("vbZoom", false) };
+                    vbX: APP_STATE.get("vbX", "mean_wall_seconds"), vbZoom: APP_STATE.get("vbZoom", false),
+                    pf: APP_STATE.get("e5PF", "all") };
     // Verbosity axis: wall = what you wait (engine speed × answer length + prefill); tokens = length alone.
     const VB = {
       mean_wall_seconds: {
@@ -207,7 +208,12 @@
         <button data-stage="with_thinking">with_thinking${graded.with_thinking ? "" : " ⏳"}</button>
         <button data-stage="all">all${graded.with_thinking ? "" : " ⏳"}</button>
       </div>
+      <div class="pf-wrap" id="e5-pf"></div>
     `;
+    // 2026-11-17: shared prompt filter (charts/promptfilter.js) — recomputes leaderboard + scatter over a subset
+    PromptFilter.select(document.getElementById("e5-pf"), prompts, state.pf, v => {
+      state.pf = v; APP_STATE.set("e5PF", v); renderAll();
+    });
     const switchEl = document.getElementById("stage-switch");
     for (const b of switchEl.querySelectorAll("button")) b.classList.toggle("active", b.dataset.stage === state.stage);
     for (const btn of switchEl.querySelectorAll("button")) {
@@ -404,10 +410,12 @@
         return;
       }
       const data = getStageData(stage);
-      const sorted = sortLeaderboard(data.leaderboard);
+      const filtered = state.pf === "all" ? data.leaderboard
+        : PromptFilter.filterLeaderboard(data, PromptFilter.ids(prompts, state.pf));
+      const sorted = sortLeaderboard(filtered);
       const sortLabel = `${state.sortBy} ${state.sortDir === "asc" ? "↑" : "↓"}`;
       document.getElementById("lb-sub").textContent =
-        `${sorted.length} modeli · sort: ${sortLabel}`;
+        `${sorted.length} modeli · sort: ${sortLabel}` + (state.pf === "all" ? "" : ` · prompty: ${PromptFilter.label(prompts, state.pf)}`);
       const sortedData = { leaderboard: sorted, matrix: data.matrix };
       renderLeaderboard(document.getElementById("lb-container"), sorted, modelMeta, {
         onClickModel: openModelDrawer,
@@ -416,7 +424,7 @@
         currentDir: state.sortDir,
       });
       const vb = VB[state.vbX];
-      document.getElementById("vb-sub").textContent = vb.sub;
+      document.getElementById("vb-sub").textContent = vb.sub + (state.pf === "all" ? "" : ` · prompty: ${PromptFilter.label(prompts, state.pf)}`);
       renderScatter(document.getElementById("vb-container"), sorted, modelMeta, {
         onClickModel: openModelDrawer, xKey: state.vbX, xLabel: vb.label, xFmt: vb.fmt,
         xLog: true, frontier: vb.frontier || "low", tooltipExtra: vb.extra,

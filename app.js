@@ -56,13 +56,14 @@ window.APP_STATE = (function () {
     "etap4": () => window.renderEtap4(VIEW),
     "etap5": () => window.renderEtap5(VIEW),
     "quant": () => window.renderQuant(VIEW),
-    "mtp": () => window.renderMTP(VIEW),
+    "drafters": () => window.renderDrafters(VIEW),
     "help": () => window.renderHelp(VIEW),
   };
   const DEFAULT_VIEW = "experiment3";
 
   function currentView() {
-    const hash = location.hash.replace(/^#\//, "");
+    let hash = location.hash.replace(/^#\//, "");
+    if (hash === "mtp") hash = "drafters";  // 2026-11-17: MTP tab merged into Drafters (history block)
     return ROUTES[hash] ? hash : DEFAULT_VIEW;
   }
 

@@ -140,6 +140,7 @@
             <tr><td><code>PLE</code></td><td>Per-Layer Embeddings — dodatkowa tablica embeddingów <em>per warstwa</em> (osobna od głównej <code>token_embd</code>). Liczy się do całkowitej masy parametrów, ale ładowana just-in-time per warstwę z CPU/RAM, więc nie wchodzi w ciężkie GEMM-y. Pozwala mieć model o jakości 7.5B przy koszcie obliczeń ~4B. Występuje w Gemma E-series.</td></tr>
             <tr><td><code>MatFormer</code></td><td>Matryoshka Transformer — model trenowany tak, że w jego wagach zagnieżdżony jest mniejszy, w pełni używalny submodel (np. E2B siedzi w E4B). Te same wagi, mniejszy plaster FFN. Pozwala "elastycznie" wybrać rozmiar bez retreningu. Google używa w Gemma 3n / 4 E-series.</td></tr>
             <tr><td><code>MTP</code></td><td>Multi-Token Prediction — dodatkowe głowy predykcyjne doklejone do modelu (pomysł z DeepSeek-V3). Inferencyjnie używane do self-speculative decoding (model sam sobie generuje draft, weryfikuje główną głową) — przy odpowiednich flagach <code>llama-server</code> może dać ~1.5–2× szybsze decode. Bez flag siedzą bezczynnie, zajmując VRAM.</td></tr>
+            <tr><td><code>DFlash / DSpark</code></td><td>Osobny mały drafter (architektura <code>dflash</code>), który zgaduje cały blok tokenów naraz; duży model weryfikuje blok jednym przebiegiem (<code>--spec-type draft-dflash</code> / <code>draft-dspark</code>). Wyniki na modelach Etapu 5: zakładka <b>Drafters</b>.</td></tr>
           </table>
         </section>
 

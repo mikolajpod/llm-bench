@@ -442,3 +442,15 @@ button:hover { background: var(--bg-hover); }
 .drawer-grades th, .drawer-grades td { border-bottom: 1px solid var(--border); padding: 4px 6px; text-align: left; vertical-align: top; }
 .drawer-grades thead th { color: var(--fg-2); }
 .sample-meta { font-size: 11px; margin-bottom: 4px; }
+
+/* Prompt filter (shared, 2026-11-17) + Drafters legend */
+.pf-wrap { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: var(--space-3); }
+.pf-label { color: var(--fg-3); font-size: 12px; }
+.pf-select {
+  background: var(--bg-3); color: var(--fg); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 4px 8px; font: inherit; font-size: 13px; max-width: 320px;
+}
+.pf-select optgroup { color: var(--fg-3); font-style: normal; }
+.pf-select option { color: var(--fg); }
+.legend-row { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: 0 0 var(--space-3); font-size: 13px; color: var(--fg-2); }
+.legend-row b { font-size: 15px; }
