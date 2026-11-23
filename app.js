@@ -57,6 +57,7 @@ window.APP_STATE = (function () {
     "etap5": () => window.renderEtap5(VIEW),
     "quant": () => window.renderQuant(VIEW),
     "drafters": () => window.renderDrafters(VIEW),
+    "kvq": () => window.renderKVQ(VIEW),
     "help": () => window.renderHelp(VIEW),
   };
   const DEFAULT_VIEW = "experiment3";
