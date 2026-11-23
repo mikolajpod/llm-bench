@@ -187,7 +187,8 @@
             <li><b>Myślenie</b> podnosi poziom (Qwen3.6, Lightning ~+2 pkt), ale efekt q4 jest taki sam jak bez myślenia — tryb bez myślenia dobrze mierzy wpływ KV.
                 Wyjątek: Qwen3.8 z myśleniem przepisuje log do liczenia i wyczerpuje limit 16k.</li>
             <li><b>Praktyka:</b> na dużych modelach mniejszy KV mieści cały model na GPU — przy 128k generowanie z q4 jest 7× (Qwen3.8) i 36× (Gemma 31B) szybsze niż z f16.
-                Przy długich odpowiedziach to q8/q4 decyduje, czy duży kontekst jest w ogóle użyteczny.</li>
+                Przy długich odpowiedziach to q8/q4 decyduje, czy duży kontekst jest w ogóle użyteczny.
+                Gdy f16 się mieści, q4 nic nie przyspiesza: wczytywanie bez zmian, generowanie o 9–41% wolniejsze (najwięcej szybkie MoE).</li>
           </ul>
           <p class="muted kvq-note">Rekomendacja: f16, gdy się mieści → q8_0 (z domyślną rotacją), gdy nie → q4_0 do 128k; przy 256k q4 tylko na modelach,
             które to wytrzymują (Qwen3.8, Qwen3.6, Groot, Gemma 26B, Gemma 12B, Qwen3.5 9B), nigdy na Lightningu.</p>
@@ -236,7 +237,7 @@
         </section>
 
         <section class="panel">
-          <h2>7 · Praktyka: czas wczytania promptu i prędkość generowania <span class="panel-sub">bez myślenia, stóg 11, seed 43, pełne zegary</span></h2>
+          <h2>7 · Praktyka: czas wczytania promptu i prędkość generowania <span class="panel-sub">bez myślenia, stóg 11, seed 43, domyślne zegary (bez blokady P3)</span></h2>
           <div class="kvq-ctrl"><div id="kq-pr-sw"></div><div class="legend-row">${legend([[COL.f16, "f16"], [COL.q8_0, "q8_0"], [COL.q4_0, "q4_0"]])}</div></div>
           <div class="kvq-two">
             <div><h3 class="kvq-h3">wczytanie promptu [min]</h3><div id="kq-pp"></div></div>
